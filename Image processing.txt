@@ -1,0 +1,55 @@
+Blending & Pasting :
+---------------------------
+- addWeighted(src1=img1,alpha=0.5,src2=img2,beta=0.5,gamma=0) #applicable when the 2 images are of same shape
+- pasting a smaller img onto a larger one : decide on the offset and replace the values in the larger img with small img values
+- blending small img without backgroung onto larger one : 
+
+Image Thresholding :
+----------------------------
+cv2.threshold(img,thresh=,maxval=,cv2.THRESH_BINARY)
+
+Blurring & Smoothing : used for removing noise
+----------------------------
+- gamma correction : lower the value, brighter the image. : np.power(image, gamma_val)
+- blur with custom kernels.
+- Gaussian blur :
+- Median blur : removes noise as well as retains certain details. takes a square kernel
+
+Morphological operators :
+----------------------------
+ sets of kernels that help achieve certain effects, such as noise reduction.
+ certain operators are good at reducing black points on white foreground & vice-versa.   
+- erosion : erodes away boundaries of foreground objects     : cv2.erode(img,kernel,iterations=1)
+- dilation : opposite of erosion where you end up adding more to the foreground.
+- opening : erosion followed by dilation. helpful in removing background noise. : cv2.morphologyEx(noise_img,cv2.MORPH_OPEN,kernel)
+- closing : opposite of opening. helpful in removing foreground noise. : cv2.morphologyEx(noise_img,cv2.MORPH_CLOSE,kernel)
+- gradient : difference between erosion & dilation. is a kind of technique used for edge detection. :cv2.morphologyEx(img,cv2.MORPH_GRADIENT,kernel)
+
+Gradient : 
+----------------------------
+image gradient is a directional change in the intensity or color in an image.
+ex. Sobel-Feldman operators
+the operator uses 3x3 kernels which are convolved with the original image to calculate approx of derivatives.
+result after applying sobel operators on an image,
+
+sobelx (calculate normalized x grad): you end up seeing things only in vertical direction. Essentially the vertical edges.
+cv2.Sobel(img,ddepth = cv2.CV_64F,dx=1,dy=0,ksize=5)
+Gx = | 1 0 -1 | * A
+     | 2 0 -2 |
+     | 1 0 -1 |
+
+sobely (calculate normalized y grad): Essentially the horizontal edges.
+cv2.Sobel(img,ddepth = cv2.CV_64F,dx=0,dy=1,ksize=5)
+Gx = | 1  2  1 | * A
+     | 0  0  0 |
+     | -1 0 -2 |
+Normalized gradient magnitude : we can see both vertical & horizontal edges, which is helpful in edge detection.
+-laplacian : cv2.Laplacian(img,cv2.CV_64F)
+/_\f = d2f/dx2 + d2f/dy2 #in cartesian coordinates
+-addWeighted(src1=sobelx,alpha=0.5,src2=sobely,beta=0.5,gamma=0) #Blending technique
+
+Histogram :
+----------------------------
+is a visual representation of the distribution of a continuous feature.
+
+

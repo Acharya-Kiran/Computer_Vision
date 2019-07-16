@@ -1,0 +1,138 @@
+----------------------------------------------------------------------------------------------------
+Template Matching :
+-----------------------------------------------------------------------------------------------------
+- Simplest form of object detection, i.e. it simply looks for an exact copy of an image in another image.
+- It scans the larger image for a provided template by sliding the template target image across the larger image.
+- the param that can be adjusted is the comparision method which is some sort of correlation based metric.
+          -------#  measure whether or not there is a relationship between two variables
+Restriction : the matching template should have the same size for the portion it is searching for in the larger image.
+
+ex. mysting = 'sum'
+    myfunc = eval(mystring)
+    myfunc([1,2,3]) ---> 6
+# eval func is used when you want to try different methods on an object.
+
+#comaparision methods
+methods = ['cv2.TM_CCOEFF','cv2.TM_CCOEFF_NORMED',...]
+for m in methods:
+    img_copy = img.copy()
+    method = eval(m)
+    res = cv2.matchTemplate(img_copy,template,method)    #--------- gives a heat map
+    min_val,max_val,min_loc,max_loc = cv2.minMaxLoc(res) #--------- then you find max & min values and their locations from the heat map and use it to draw rectangles
+    if method in [cv2.TM_SQDIFF,TM_SQDIFF_NORMED]: #These methods actually work on the minimium. i.e. darker portion of heat map is the matched portion.
+	top_left = min_loc #(x,y)
+    else:
+	top_left = max_loc
+    height, width, channels = template.shape
+    bottom_right = (top_left[0]+width,top_left[1]+height)
+    cv2.rectangle(img_copy,top_left,bottom_right,(255,0,0),10)
+
+----------------------------------------------------------------------------------------------------
+Corner Detection:
+----------------------------------------------------------------------------------------------------
+- Looking for corners in images
+- Corner is a point whose local neighborhood stands in two dominant & different edge directions OR junction of two edges where, edge is sudden change in image brightness.
+Algo's:
+1. Harris Corner Detection
+intution - Corners can be detected by looking for significant change in all directions.
+f(x,y) = SUMMATION(xk,yk)EW (I(xk,yk)-I(xk+delta(x),yk+delta(y)))^2
+#we need floting values in img matrix for corner-harris, Shi-Tomasi detection algo.
+ img = cv2.imread("path");
+ gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+ gray_ = np.float32(gray)
+ dst = cv2.cornerHarris(src=gray_,blockSize=2,ksize=3,k=0.04) #blocksize - neighborhood size & thats how it actually detects corner eigenvalues & vectors,
+                                                              #ksize -  aperture/kernel size param for "sobel" ------------------------------------
+              						      #k - harris detector free param
+ #the result is dilated for marking the corners.
+ dst = cv2.dilate(dst,None)
+
+
+2. Shi-Tomasi Corner Detection - made a small modification to Harris-Corner which ended up with better results.
+It changes the scoring function selection criteria that Harris uses for corner detection.
+Harris uses : R = lambda1*lambda2 - k(lambda1+lambda2) #####--------------------- k : harris detector free param, value in range [0.04,0.06] : (lets tradeoff between
+                                                      (precision & recall, high value - less false corners, low-value - more corners ) 
+Shi-Tomasi : R = min(lambda1,lambda2)
+
+-corners = cv2.goodFeaturesToTrack(gray_,max_num_of_corners_req/-1 to return all corners,quality_level_param(multiplied with min eigen value or R),min_dist)
+
+----------------------------------------------------------------------------------------------------
+Edge detection:
+----------------------------------------------------------------------------------------------------
+Expanding to find general edges of objects.
+- Canny Edge Detector process: 
+. Apply Gaussian/Custom Blur to remove noise and hence smooth the image.
+. Find the intensity gradients of the image : Smoothened image is then filtered with a 'Sobel' kernel in both horizontal and vertical direction to get first derivative
+  in horizontal direction (G_x) and vertical direction (G_y). 
+. Apply no-maximum suppression to get rid of spurious response to edge detection
+. Apply double threshold to determine potential edges	
+. Track edge by hysteresis - find edges by suppressing all other those are weak & not connected to strong edges.
+the algo requires user to decide on low and high threshold vals.
+
+edges = cv2.Canny(img,threshold1,threshold2)
+	
+
+----------------------------------------------------------------------------------------------------
+Grid Detection:
+----------------------------------------------------------------------------------------------------
+- Combining Corner & Edge Detection to find grid like patterns in images.
+- Often Cameras can cause distortion in an image such as radial and tangential distortion. A good way to account for these distortions when performing operations like
+ object tracking is to have a recognizable pattern attached to the object being tracked.
+- Grid pattterns are often used to calibrate cameras and track motion.
+- The grid should be specifically made to look like some sort of checkerboard / chess board type image and then placed on whatever you are trying to calibrate your
+ camera with.
+ex1.
+ flat_chess = cv2.imread("path")
+-- found,corners = cv2.findChessboardCorners(flat_chess,(7,7)) #grid_size : we exclude the border corners of a chess board as there is no neighborhood to find gradient
+ #found - boolean indicating whether a chess board was found or not.
+ #corners - co-ordinates in image where its found.	
+-- cv2.drawChessboardCorners(flat_chess,(7,7),corners,found) #---corners in every row is plotted in seperate color and lines are drawn across each corner in row pattern 
+                                                             where the last corner is connected to first corner in next row via a line
+ plt.imshow(flat_chess)
+
+ex2.
+ dots = cv2.imread("path")
+-- found,corners = cv2.findCirclesGrid(dots,(10,10),cv2.CALIB_CB_SYMMETRIC_GRID) #is the way it actually searches for it.
+-- cv2.drawChessboardCorners(dots,(10,10),corners,found)
+
+
+----------------------------------------------------------------------------------------------------
+Contour Detection:
+----------------------------------------------------------------------------------------------------
+Allows to detect foreground vs background images. also allows for detection of external vs internal contours.(ex. grabbing eyes & smile from a face)
+- Contours are defined as simply a curve that joining all continuous points (along the boundary), having same color or intensity.
+- Contours are useful tool for shape analysis, object detection and recognition.
+- For better accuracy, use binary images. So before finding contours, apply threshold or canny edge detection.
+- In OpenCV, finding contours is like finding white object from black background. So, object to be found should be white and background should be black.
+
+image,contours,hierarchy = cv2.findContours(img,cv2.RETR_CCOMP (to recieve both internal & external contours/ Contour retrieval mode),cv2.CHAIN_APPROX_SIMPLE (Contour approximation method))
+#----Contours are the boundaries of a shape with same intensity. It stores the (x,y) coordinates of the boundary of a shape. 
+#----But does it store all the coordinates ? That is specified by this contour approximation method.
+#----cv2.CHAIN_APPROX_SIMPLE removes all redundant points and compresses the contour, thereby saving memory.
+#hierarchy is a np_array which defines the pointss where contours are and has a value -ve/+ve indicating external or internal contour respectively.
+
+external_contours = np.zeros(img.shape) #background to display contours on
+for i in range(len(contours)):
+    if hierarchy[0][i][3] == -1: #------external contours - are the things that are directly touching what it actually believes to be the background
+	cv2.drawContours(external_contours,contours,i,255 (color to display),-1) #-1 indicates its filled
+    else:    #-----------internal contours are grouped differently using the value in hierarchy
+	cv2.drawContours(external_contours,contours,i,255 (color to display),-1)
+plt.imshow(external_contours,cmap='gray')
+
+
+----------------------------------------------------------------------------------------------------
+Feature Matching:
+----------------------------------------------------------------------------------------------------
+Advanced method of detecting matching objects in another image.	
+- Brute-Force Matching with ORB(Oriented fast & Rotated Brief) descriptors
+- Brute-Force Matching with SIFT(Scale Invariant Feature Transform) descriptors & Ratio Test //uses KNN
+- FLANN(Fast Library for Aproximate Nearest Neighour) based matcher //uses KDTree
+
+
+Watershed Algorithm:
+----------------------------
+Advanced algo that alows us to segment images into foreground & background. allows us to manually set seeds to choose segments of an image.
+
+
+Facial & eye detection:
+----------------------------
+use Haar-Cascades to detect faces in images.
