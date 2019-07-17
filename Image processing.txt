@@ -40,7 +40,7 @@ Gx = | 1 0 -1 | * A
 
 sobely (calculate normalized y grad): Essentially the horizontal edges.
 cv2.Sobel(img,ddepth = cv2.CV_64F,dx=0,dy=1,ksize=5)
-Gx = | 1  2  1 | * A
+Gy = | 1  2  1 | * A
      | 0  0  0 |
      | -1 0 -2 |
 Normalized gradient magnitude : we can see both vertical & horizontal edges, which is helpful in edge detection.

@@ -1,0 +1,26 @@
+----------------------------------------------------------------------------------------------------
+Optical Flow
+----------------------------------------------------------------------------------------------------
+is the pattern of apparent motion of image objects between 2 consecutive frames caused by the movement of object or camera.
+
+Assumptions-
+- The pixel instensities of an object do not change between consecutiove frames
+- Neighbouring pixels have similar motion
+
+The optical flow methods will first take a given set of points and a frame.
+then it will attempt to find those points in the next frame.
+##-------Using OpenCV we pass in previous frame, previous points and the current frame to the Lucas-Kanade function.
+##------Lucas-Kanade computes optical flow for a sparse feature set -> meaning only the points it was told to track. It uses least-squared criterion.
+
+We can use Gunner Farneback's Algorithm  to calculate dense optical flow. This dense optical flow will calculate flow for all points in an image.
+It will color them black if no flow/movement is detected. - Two-Frame Motion Estimation Based on Polynomial Expansion
+
+----------------------------------------------------------------------------------------------------
+Mean Shift
+----------------------------------------------------------------------------------------------------
+
+
+
+----------------------------------------------------------------------------------------------------
+CAMShift (Continuously Adaptive Mean Shift)
+----------------------------------------------------------------------------------------------------
