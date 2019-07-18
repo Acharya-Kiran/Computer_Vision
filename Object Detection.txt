@@ -131,6 +131,14 @@ Advanced method of detecting matching objects in another image.
 ##----Brute-Force matcher is simple. It takes the descriptor of one feature in first set and is matched with all other features in second set 
 ##----using some distance calculation. And the closest one is returned.
 
+----What is this Matcher Object?
+----The result of matches = bf.match(des1,des2) line is a list of DMatch objects. This DMatch object has following attributes:
+
+----DMatch.distance - Distance between descriptors. The lower, the better it is.
+----DMatch.trainIdx - Index of the descriptor in train descriptors
+----DMatch.queryIdx - Index of the descriptor in query descriptors
+----DMatch.imgIdx - Index of the train image.
+
 1- Brute-Force Matching with ORB(Oriented fast & Rotated Brief) descriptors #------Binary string based descriptors, uses Hamming distance as measurement(cv2.NORM_HAMMING)
 orb = cv2.ORB_create() #---create a detector
 kp1,des1 = orb.detectAndCompute(target_img,None(option for mask)) #---returns key points & descriptors
@@ -158,6 +166,8 @@ for match1,match2 in matches:
 	good.append([match1])
 res = cv2.drawMatchesKnn(target_img,kp1,secondary_img,kp2,good,None,flags=2)
 
+Note : KNN -->
+
 
 3- FLANN(Fast Library for Aproximate Nearest Neighour) based matcher //uses KDTree
 It contains a collection of algorithms optimized for fast nearest neighbor search in large datasets and 
@@ -181,6 +191,10 @@ for match1,match2 in matches:
 	good.append([match1])
 res = cv2.drawMatchesKnn(target_img,kp1,secondary_img,kp2,good,None,flags=2)
 
+Note: KDTree --> 
+
+
+
 ----------------------------------------------------------------------------------------------------
 Watershed Algorithm:
 ----------------------------------------------------------------------------------------------------
@@ -201,14 +215,14 @@ opening = cv2.morphologyEx(thresh,cv2.MORPH_OPEN,kernel,itertions=2)
 sure_bg = cv2.dilate(opening,kernel,iterations=3	)
 ----
 ##----- Watershed algorithm requires to set seeds that we are sure in the foreground.
-##------- To get this what we can do is a ****distance transform.****: you should have a binary imagw with 0&1's or 0&255's.
+##------- To get this what we can do is a ****distance transform.****: you should have a binary image with 0&1's or 0&255's.
 ##------- what it does is, it increases the values of the pixels that are further away from 0's. (0 being the background)
-##------- then we would expect the ery centres of the shapes to be bright and slowly fade away into dark gray as you go away from the centre.
+##------- then we would expect the every centres of the shapes to be bright and slowly fade away into dark gray as you go away from the centre.
 ##-------Then you apply threshold and get the fixed foreground points for those shapes.
 
 dist_transform = cv2.distanceTransform(opening,cv2,DIST_L2,5) # distance_type, mark_size
 ret,sure_fg = cv2.threshold(dist_transform,0.7*dist_transform.max(),255,0)
- #---sure_fg with have the centre points of the shapes and the rest of the shape has to be identified by the Watershed Algorithm.
+ #---sure_fg with have the centre points of the shapes and the rest part of the shape has to be identified by the Watershed Algorithm.
 sure_fg = np.uint8(sure_fg)
 unknown = cv2.subtract(sure_bg,sure_fg) #the regions that we are unsure of being fg or bg
 
@@ -226,15 +240,75 @@ for i in range(len(contours)):
 ----------------------------------------------------------------------------------------------------
 Watershed Algorithm with Custom Seeds
 ----------------------------------------------------------------------------------------------------
+Custom seeds to the algo can be provided with the help of mouse-click event.
+ex.
+
+road = cv2.imread('path')
+road_copy = np.copy(road) OR road.copy()
+marker_image = np.zeros(road.shape[:-2],dtype=np.int32)
+segments = np.zeros(road.shape,dtype=uint8)
+
+from matplotlib import cm #colormappings
+cm.tab10(0) #returns (R,G,B,aplha) value. here alpha is 1.0 indicating values of intensities are in range 0-1. So we multiplyt it by 255 	
+
+def create_rgb(i):
+    return tuple(np.array(cm.tab10(i)[:3])*255)
+colors = []
+for i in range(10):
+    colors.append(create_rgb(i))
+##
+#-Global variables
+n_markers = 	10
+current_marker = 1 #-----color choice
+marker_updated = False #--- markers updated by Watershed
+
+#-Callback 
+def mouse_callback(event,x,y,flags,param):
+    global marks_updated
+    if event == cv2.EVENT_LBUTTONDOWN:
+	#MARKER PASSED TO WATERSHED ALGO
+	cv2.circle(marker_image,(x,y),10#radius,(current_marker),-1)
+	#USER SEES ON ROAD IMG
+	cv2.circle(road_copy,(x,y),10#radius,colors[current_marker],-1)
+	marker_updated = True
+cv2.namedWindow('Road Image')
+cv2.setMouseCallback('Road Image',mouse_callback)
+while True:
+    cv2.imshow('Watershed segments',segments) #segments would initially be a black image
+    cv2.imshow('Road Image',road_copy)
+    #CLOSE ALL WINDOWS
+    k = cv2.waitKey(1) & 0xFF
+    if k == 27:
+	break
+    #CLEARING ALL COLORS
+    elif k == ord('c'):
+	road_copy = np.copy(road) OR road.copy()
+	marker_image = np.zeros(road.shape[:-2],dtype=np.int32)
+	segments = np.zeros(road.shape,dtype=uint8)
+    #UPDATE COLOR CHOICE
+    elif k>0 and char(k).isDigit():
+	current_marker = int(char(k))
+
+    #UPDATE MARKINGS
+    if marks_updated:
+	marker_image_copy = marker_image.copy()
+	cv2.watershed(road,marker_image_copy)
+	segments = np.zeros(road.shape,dtype=uint8)
+
+	for color_ind in range(n_markers):
+	    segments[marker_image_copy==(color_ind)] = colors[color_ind]
+
+cv2.destroyAllWindows()
+  	
+##---so here you have 2 images displayed side by side. you select a color, click on 1st image, the color and location of point will be used as seed and segment
+#---- would be displayed with the same color on 2nd image.
 
 
-
-
-
-
-
-
-
+----------------------------------------------------------------------------------------------------
 Facial & eye detection:
-----------------------------
+----------------------------------------------------------------------------------------------------
 use Haar-Cascades to detect faces in images.
+
+
+Note : We need a large dataset and Deep Learning for Facial Recognition.
+

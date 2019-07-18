@@ -11,7 +11,9 @@ The optical flow methods will first take a given set of points and a frame.
 then it will attempt to find those points in the next frame.
 ##-------Using OpenCV we pass in previous frame, previous points and the current frame to the Lucas-Kanade function.
 ##------Lucas-Kanade computes optical flow for a sparse feature set -> meaning only the points it was told to track. It uses `least-squared criterion`-> same used for linear regression.
---ex. Lucas-Kanade Optical flow
+
+1--ex. Lucas-Kanade Optical flow
+
 corner_track_params = dict(maxCorners=10,qualityLevel=0.3,minDistance=7,blockSize=7)
 lk_params = dict(winSize=(200,200),maxLevel=2,criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT,10,0.03)) 
 #---you essentially going to have tradeoff between small & large winSize, Smaller window will be more sensitive to noise and we may miss larger motions.
@@ -19,17 +21,115 @@ lk_params = dict(winSize=(200,200),maxLevel=2,criteria=(cv2.TERM_CRITERIA_EPS | 
 #---1 being 1/2 resolution, 2 being 1/4 resolution & so on. Lucas Kanade allows you to find optical flow at various resolutions of the image.
 #---cv2.TERM_CRITERIA_EPS : 0.03 #--epsilon. smaller epsilon means we finish the search early. ---> accountable for speed of tracking
 #---cv2.TERM_CRITERIA_COUNT : 10 #--max no. of iterations. more iterations means more exhaustive search for the points.---> accountable for accuracy of tracking
+#---tracking in a video
+cap = cv2.VideoCapture(0)
+ret,prev_frame = cap.read()
+prev_gray = cv2.cvtColor(prev_frame,cv2.COLOR_BGR2GRAY)
+#POINTS TO TRACK
+prevPts = cv2.goodFeaturesToTrack(prev_gray,mask=None,**corner_track_params) #** allows you to pass dictionary
+mask = np.zeros_like(prev_frame) #more to do for displaying the actual points and drawing lines, not for tracking
+while True:
+    ret,frame = cap.read()
+    frame_gray = cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
+    nextPts, status, err = cv2.calcOpticalFlowPyrLK(prev_gray,frame_gray,prevPts,None,**lk_params) #PyramidLucasKanade-- #prevPts are the points to track in current frame
+    #--- status-> returns a status vector where each element of vector is set to 1 if flow for corresponding features has been found
+    good_new = nextPts[status==1]
+    good_prev = nextPts[status==1]
+    
+    for i,(new,prev) in enumerate(zip(good_new,good_prev)):
+	x_new,y_new = new.ravel()
+ 	x_prev,y_prev = prev.ravel()
+	mask = cv2.line(mask,(x_new,y_new),(x_prev,y_prev),(0,255,0),3)
+	frame = cv2.circle(frame,(x_new,y_new),8 #radius,(0,0,255),-1 #indicating filled) #--drawing dots on new points
+    img = cv2.add(frame,mask)
+    cv2.imshow('tracking',img)
+    
+    if cv2.waitKey(30) & 0xFF == 27:
+	break
+    prev_frame = frame_gray.copy()
+    prevPts = good_new.reshape(-1,1,2) #format in which it has to ve passed to 'calcOpticalFlowPyrLK' func
+cv2.destroyAllWindows()
+cap.release()
 
-
+	
+2--ex. Gunner Farneback's Algorithm
+ 	
 We can use Gunner Farneback's Algorithm  to calculate dense optical flow. This dense optical flow will calculate flow for all points in an image.
-It will color them black if no flow/movement is detected. - `Two-Frame Motion Estimation Based on Polynomial Expansion`
+It will color them black if no flow/movement is detected. - 
 
+`Two-Frame Motion Estimation Based on Polynomial Expansion`
+ prev(y,x)~next(y+flow(y,x)[1],x+flow(y,x)[0])
+
+We check entire image, then highlight points that are moving based on the direction they are moving in.
+
+import cv2
+import numpy as np
+cap = cv2.VideoCapture(0)
+ret,frame1 = cap.read()
+prevImg = cv2.cvtColor(frame1,cv2.COLOR_BGR2GRAY)
+hsv_mask = np.zeros_like(frame1)
+hsv_mask[:,:,1] = 255 #setting saturation to high
+while True:
+    ret,frame2 = cap.read()
+    nxtImg = cv2.cvtColor(frame2,cv2.COLOR_BGR2GRAY)
+
+    flow = cv2.calcOpticalFlowFarneback(prevImg,nxtImg,computed_flow_img/None->if flow is to be retrieved,pyr_scale,levels,winsize,iterations,poly_n)
+    #--pyr_scale : parameter, specifying the image scale/resoluion (<1) to build pyramids for each image
+    #--levels : number of pyramid layers including the initial image
+    #--winsize : averaging window size; larger values increase the algorithm robustness to image noise and give more chances for fast motion detection, 
+                 but yield more blurred motion field.
+    #--iterations : number of iterations the algorithm does at each pyramid level.
+    #--poly_n : size of the pixel neighborhood used to find polynomial expansion in each pixel; larger values mean that the image will be approximated 
+                with smoother surfaces, yielding more robust algorithm and more blurred motion field, typically poly_n =5 or 7.
+    #--poly_sigma : standard deviation of the Gaussian that is used to smooth derivatives used as a basis for the polynomial expansion; for poly_n=5, 
+                you can set poly_sigma=1.1, for poly_n=7, a good value would be poly_sigma=1.5
+    #--flags : operation flags
+               0. OPTFLOW_USE_INITIAL_FLOW uses the input flow as an initial flow approximation.
+               1. OPTFLOW_FARNEBACK_GAUSSIAN uses the Gaussian winsize×winsize filter instead of a box filter of the same size for optical flow estimation; 
+                                   usually, this option gives z more accurate flow than with a box filter, at the cost of lower speed; 
+    ##---we get a flow object containing vector flow Cartesian Information, essentially a vector pointing in the direction the flow of each pixel was happening.
+    
+    mag, ang = cv2.cartToPolar(flow[:,:,0],flow[:,:,1],angleInDegrees=True)
+    ##---then we convert it into polar coordinates i.e. magnitude & angle, which can be then mapped onto hsv color mapping. i.e different color for different direction.
+    
+    hsv_mask[:,:,0] = ang/2 #looking at half the hues(direction color), will help in better identify directns
+    hsv_mask[:,:,2] = cv2.normalize(mag,None,0,255,cv2.NORM_MINMAX)
+    bgr = cv2.cvtColor(hsv_mask,cv2.COLOR_HSV2BGR)
+    cv2.imshow('frame',bgr)
+    if cv2.waitKey(30) & 0xFF == 27:
+	break
+    prevImg = nxtImg
+cap.release()
+cv2.destroyAllWindows()
+    
+    
 ----------------------------------------------------------------------------------------------------
 Mean Shift
 ----------------------------------------------------------------------------------------------------
+You have data points/ key points and you want to group them into clusters. You take all data points and stack red & blue points on each of them. So to begin 
+the process of MeanShift Algorithm, we calculate the direction to the closest cluster centroid by determining where most of the points nearby are at (weighted mean).	
+So on each iteration, each of the blue point will move closer to where most points are at, which should then lead to our cluster centers.
+The red & blue points overlap in first iteration before Algo starts. After each iteration the blue points will move towards the clusters. After subsequent iterations,
+the cluster means stops moving, indicating we have identified our cluster centres.
+--- It won't always detect what may be more 'reasonable',coz unlike K-Means which takes k-no. of clusters, as input, MeanShift decides on its own.
+##--- MeanShift can be given a target to track, calculate the color histogram of the target area and keep sliding the tracking window to closest match (cluster center)
+
+Note : Just using MeanShift won't change the window size if the target moves away or towards camera.
+       so we use CAMShift to update the size of the window.
+
+ex. Face tracking --> Detect the face in a frame and then pass those set of pixels as input for the Algo to track.
+
+cap = cv2.VideoCapture(0)
+ret,frame = cap.read()
+
 
 
 
 ----------------------------------------------------------------------------------------------------
 CAMShift (Continuously Adaptive Mean Shift)
 ----------------------------------------------------------------------------------------------------
+We first apply MeanShift and then perform its iterations, eventually when MeanShift converges after a few iterations, we are going to calculate the new region of
+interest and we do it by updating the size of the actual region of interest. We also calculate the orientaion of the best-fitting ellipse to the new region of interest.
+Again it goes and applies MeanShift with the new scaled search window in prev window location, and this process is continued until some sort of accuracy is met.
+
+
