@@ -110,8 +110,8 @@ You have data points/ key points and you want to group them into clusters. You t
 the process of MeanShift Algorithm, we calculate the direction to the closest cluster centroid by determining where most of the points nearby are at (weighted mean).	
 So on each iteration, each of the blue point will move closer to where most points are at, which should then lead to our cluster centers.
 The red & blue points overlap in first iteration before Algo starts. After each iteration the blue points will move towards the clusters. After subsequent iterations,
-the cluster means stops moving, indicating we have identified our cluster centres.
---- It won't always detect what may be more 'reasonable',coz unlike K-Means which takes k-no. of clusters, as input, MeanShift decides on its own.
+the cluster's means stops moving, indicating we have identified our cluster centres.
+##--- It won't always detect what may be more 'reasonable',coz unlike K-Means which takes k-no. of clusters, as input, MeanShift decides on its own.
 ##--- MeanShift can be given a target to track, calculate the color histogram of the target area and keep sliding the tracking window to closest match (cluster center)
 
 Note : Just using MeanShift won't change the window size if the target moves away or towards camera.

@@ -301,13 +301,28 @@ while True:
 cv2.destroyAllWindows()
   	
 ##---so here you have 2 images displayed side by side. you select a color, click on 1st image, the color and location of point will be used as seed and segment
-#---- would be displayed with the same color on 2nd image.
+##---would be displayed with the same color on 2nd image.
 
 
 ----------------------------------------------------------------------------------------------------
 Facial & eye detection:
 ----------------------------------------------------------------------------------------------------
-use Haar-Cascades to detect faces in images.
+use Viola-Jones algorithm with Haar-Cascades to detect faces in images, based on a simple concept of few key features. They also came up with the idea of pre-computing
+an integral image to save time on calculations.
+The main features are,
+- Edge features
+- Line features
+- Four-Rectangle features
+Each feature is a single value obtained by subtracting sum of pixels under white rectangle from sum under black rectangle. The closure the feature is to 1, better the
+feature. Calculating these sums for the entire image would be very Computationally expensive. The algorithm solves this by using the integral image, resulting in an
+O(1) running time of the algorithm.
+-- An Integral image is also known as a summed area table. ex. It helps us calculate the sum of any rectangle/ sub-rectangles in actual image. comes handy when you want to subract 
+   light region from a dark region.
+-- The Algorithm also saves time by going through a cascade of classifiers, which means the image is treated with the series of classifiers based on simple features.
+-- Once the image fails a classifier, the attempt to detect a face can be stopped.
+##-- Downside of this algo is the very large dataset needed to create your own features. Luckily many pre-trained sets of features exist.		
+##-- OpenCV comes with pre-trained xml files of various Haar-Cascades.
+
 
 
 Note : We need a large dataset and Deep Learning for Facial Recognition.
