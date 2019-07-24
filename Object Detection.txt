@@ -1,6 +1,6 @@
 ----------------------------------------------------------------------------------------------------
 Template Matching :
------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
 - Simplest form of object detection, i.e. it simply looks for an exact copy of an image in another image.
 - It scans the larger image for a provided template by sliding the template target image across the larger image.
 - the param that can be adjusted is the comparision method which is some sort of correlation based metric.
@@ -323,7 +323,65 @@ O(1) running time of the algorithm.
 ##-- Downside of this algo is the very large dataset needed to create your own features. Luckily many pre-trained sets of features exist.		
 ##-- OpenCV comes with pre-trained xml files of various Haar-Cascades.
 
+ex. 
+#----the operations are performed on a grayscale image
+#-------The Haar Cascades are able to detect the face for upto 45 degree of variation.
 
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+%matplotlib inline                      #--- not necessary for latest jupyter notebook versions
+
+nadia = cv2.imread('path',0) #---image with a single face. 0 - indicates the extraction of grayscale/single-channel image from colored one.
+solvay = cv2.imread('path',0) #--group photo.
+
+face_cascade = cv2.CascadeClassifier('../haarcascade_frontalface_default.xml') #--this classifier contains over 6000 features. there are multiple of the same kind.
+
+def detect_face(img):
+    face_img = img.copy()
+    face_rects = face_cascade.detectMultiScale(face_img) #--returns x,y of top left corner along with width,height of rectangle consisting the match of features.
+    for (x,y,w,h) in face_rects:
+        cv2.rectangle(face_img,(x,y),(x+w,y+h),(255,255,255),10) #--last 2 features are color & thickness
+    return face_img
+result = detect_face(nadia)
+plt.imshow(result,cmap='gray')
+
+#---when the same method is applied to a photo of multiple faces, it might detect noise or have multiple rectangles on same face. So we add few parameters specifically
+#--- scale factor      - param specifying how much the image size is reducing at each image scale
+#--- minimum_neighbors - param specifying how many neighbors each candidate rectangle should have to retain it.
+
+def adj_detect_face(img):
+    face_img = img.copy()
+    face_rects = face_cascade.detectMultiScale(face_img, scaleFactor=1.2, minNeighbors=5) #default values
+    for (x,y,w,h) in face_rects:
+        cv2.rectangle(face_img,(x,y),(x+w,y+h),(255,255,255),10) #--last 2 features are color & thickness
+    return face_img
+result = adj_detect_face(solvay)
+plt.imshow(result,cmap='gray')
+
+eye_cascade = cv2.CascadeClassifier('../haarcascade_eye.xml')  
+#---the features are able to detect eyes assuming they are brighter than almost all parts of face, and may not work with edited photos.
+
+def detect_eyes(img):
+    face_img = img.copy()
+    eyes_rects = eye_cascade.detectMultiScale(face_img, scaleFactor=1.2, minNeighbors=5) 
+    for (x,y,w,h) in eyes_rects:
+        cv2.rectangle(face_img,(x,y),(x+w,y+h),(255,255,255),10) #--last 2 features are color & thickness
+    return face_img
+result = detect_eyes(nadia)
+plt.imshow(result,cmap='gray')
+
+#--detect faces in a video
+cap = cv2.VideoCapture(0)
+while True:
+    ret,frame = cap.read(0)
+    frame = detect_frame(frame)
+    cv2.imshow('Video Face Detect',frame)
+    k = cv2.waitKey(1)
+    if k==27:
+	break
+cap.release()
+cv2.destroyAllWindows()
 
 Note : We need a large dataset and Deep Learning for Facial Recognition.
 

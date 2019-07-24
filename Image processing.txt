@@ -1,22 +1,26 @@
+----------------------------------------------------------------
 Blending & Pasting :
----------------------------
+----------------------------------------------------------------
 - addWeighted(src1=img1,alpha=0.5,src2=img2,beta=0.5,gamma=0) #applicable when the 2 images are of same shape
 - pasting a smaller img onto a larger one : decide on the offset and replace the values in the larger img with small img values
 - blending small img without backgroung onto larger one : 
 
+----------------------------------------------------------------
 Image Thresholding :
-----------------------------
+----------------------------------------------------------------
 cv2.threshold(img,thresh=,maxval=,cv2.THRESH_BINARY)
 
+----------------------------------------------------------------
 Blurring & Smoothing : used for removing noise
-----------------------------
+----------------------------------------------------------------
 - gamma correction : lower the value, brighter the image. : np.power(image, gamma_val)
 - blur with custom kernels.
 - Gaussian blur :
 - Median blur : removes noise as well as retains certain details. takes a square kernel
 
+----------------------------------------------------------------
 Morphological operators :
-----------------------------
+----------------------------------------------------------------
  sets of kernels that help achieve certain effects, such as noise reduction.
  certain operators are good at reducing black points on white foreground & vice-versa.   
 - erosion : erodes away boundaries of foreground objects     : cv2.erode(img,kernel,iterations=1)
@@ -25,8 +29,9 @@ Morphological operators :
 - closing : opposite of opening. helpful in removing foreground noise. : cv2.morphologyEx(noise_img,cv2.MORPH_CLOSE,kernel)
 - gradient : difference between erosion & dilation. is a kind of technique used for edge detection. :cv2.morphologyEx(img,cv2.MORPH_GRADIENT,kernel)
 
+----------------------------------------------------------------
 Gradient : 
-----------------------------
+----------------------------------------------------------------
 image gradient is a directional change in the intensity or color in an image.
 ex. Sobel-Feldman operators
 the operator uses 3x3 kernels which are convolved with the original image to calculate approx of derivatives.
@@ -48,8 +53,81 @@ Normalized gradient magnitude : we can see both vertical & horizontal edges, whi
 /_\f = d2f/dx2 + d2f/dy2 #in cartesian coordinates
 -addWeighted(src1=sobelx,alpha=0.5,src2=sobely,beta=0.5,gamma=0) #Blending technique
 
+----------------------------------------------------------------
 Histogram :
-----------------------------
-is a visual representation of the distribution of a continuous feature.
+----------------------------------------------------------------
+In general a Histogram is a visual representation of the distribution of a continuous feature.
+-- for images we can display the frequency of values for colors. Each of three RGB channels has frequency between 0-255.
+
+#-----Calculating Histogram------
+
+blue_bricks = cv2.imread('path')
+show_bricks = cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
+
+#OpenCV reads image in BGR, so for channels 0-Blue,1-Green,2-Red
+hist_values = cv2.calcHist([blue_bricks],channels=[0],mask=None,histSize=[256],ranges=[0,256]) #mask - you input the region in an image, for which you want to calculate histogram.
+
+plt.imshow(hist_values) 
+#will plot the frequency graph, with x values-> color_intensity & y values--> frequency.
+
+#calculating histogram for all 3 color channels in an image.
+color = ('b','g','r')
+for i,col in enumerate(color):
+    histr = cv2.calcHist([img],[i],None,[256],[0,256])
+    plt.plot(histr,color=col)
+    plt.xlim([0,256])
+plt.title('HISTOGRAM FOR BLUE BRICKS')
 
 
+#-----Calculating Histograms on a masked portion of the image-----
+rainbow = cv2.imread('path')
+show_rainbow  = cv2.cvtColor(rainbow,cv2.COLOR_BGR2RGB)
+mask = np.zeros(img.shape[:2],np.uint8)
+mask[300:400,100:400] = 255
+show_masked_img = cv2.bitwise_and(show_rainbow,show_rainbow,mask=mask)
+hist_masked_red = cv2.calcHist([rainbow],channels=[2],mask=mask,histSize=[256],ranges=[0,256])
+
+
+#-----Histogram Equalization-----
+Its a method of contrast adjustment based on the image's histogram. It helps in reducing the `color-depth` i.e. reducing the shades of gray, or if you're working 
+on a particular color channel, then you reduce the number of in-between colors.
+######----It works on the principal of `Cumulative Distribution Function`. ----####
+It takes the min,max intensity value from the original image and distributes the values in range [0,255].
+ex.
+v - Pixel Intensity
+cdf(v) - count of pixels with intensity v.
+h(v) is the new value obtained from `histogram equalization formula`
+
+h(v) = round( ( cdf(v)-cdf_min)/(MxN - cdf_min) * (L-1) )
+---MxN : image's no. of pixels
+---L : no. of gray levels used
+
+ex.
+#--equalizing grayscale image
+gorilla = cv2.imread('path',0) #read as a grayscale
+
+def display(img,cmap=None):
+    fig = plt.figure(figsize=(10,8))
+    ax = fig.add_subplot(111)
+    ax.imshow(img,cmap)
+
+hist_values = cv2.calcHist([gorilla],channels=[0],mask=None,histSize=[256],ranges=[0,256])
+
+eq_gorilla = cv2.equalizeHist(gorilla)
+
+#--equalizing colored image
+color_gorilla = cv2.imread('path')
+show_gorilla = cv2.cvtColor(color_gorilla,cv2.COLOR_BGR2RGB)
+ #---if you want to equalize the histogram of a color image, the way OpenCV works is it take the image in a format of HSV.
+hsv = cv2.cvtColor(color_gorilla,cv2.COLOR_BGR2HSV)
+ #---the channel we are interested in manipulating is the V channel.
+hsv[:,:,2] = cv2.equalizeHist(hsv[:,:,2])
+ #---then convert it back to RGB to visulaize
+eq_color_gorilla = cv2.cvtColor(hsv,cv2.COLOR_HSV2RGB)
+
+
+####--- for original image, if we plot a line describing the `cumulative histogram` we can see a no-linear line. but as we apply histogram equalizaion so that we 
+####--- linearize the `cumulative histogram curve`.
+
+#--The main drawback of histograms for classification is that the representation is dependent of the color of the object being studied,
+#--ignoring its shape and texture.

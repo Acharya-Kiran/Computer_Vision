@@ -114,14 +114,42 @@ the cluster's means stops moving, indicating we have identified our cluster cent
 ##--- It won't always detect what may be more 'reasonable',coz unlike K-Means which takes k-no. of clusters, as input, MeanShift decides on its own.
 ##--- MeanShift can be given a target to track, calculate the color histogram of the target area and keep sliding the tracking window to closest match (cluster center)
 
-Note : Just using MeanShift won't change the window size if the target moves away or towards camera.
+``````Note : Just using MeanShift won't change the window size if the target moves away or towards camera.
        so we use CAMShift to update the size of the window.
 
 ex. Face tracking --> Detect the face in a frame and then pass those set of pixels as input for the Algo to track.
 
 cap = cv2.VideoCapture(0)
 ret,frame = cap.read()
+face_cascade = cv2.CascadeClassifier('../haarcascade_frontalface_default.xml')
+face_rects = face_cascade.detectMultiScale(frame)
+(face_x,face_y,w,h) = tuple(face_rects[0])
+track_window = (face_x,face_y,w,h)
+roi = frame[face_y:face_y+h,face_x:face_x+w] 
+hsv_roi = cv2.cvtColor(roi,cv2.COLOR_BGR2HSV) #
+# find the histogram to back project the target on each frame, in order to calculate the Mean-Shift
+roi_hist = cv2.calcHist([hsv_roi],channels=[0],mask=None,histSize=[180],ranges=[0,180])
+cv2.normalize(roi_hist,roi_hist,0,255,cv2.NORM_MINMAX)
+term_crit = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 1)
 
+while True:
+    ret,frame = cap.read()
+    if ret == True:
+	hsv = cv2.cvtColor(frame,cv2.COLOR_BGR2HSV)
+	dst = cv2.calcBackProject([hsv],[0],roi_hist,[0,180],1) ##---
+        #####----------------------------------
+	ret,track_window = cv2.meanShift(dst,track_window,term_crit)
+	x,y,w,h = track_window
+	img2 = cv2.rectangle(frame,(x,y),(x+w,y+w),(0,0,255),5)
+	#####-----------------------------------
+	cv2.imshow('img',img2)
+	k = cv2.waitKey(1) & 0xFF
+	if k==27:
+	    break
+    else:
+	break
+cv2.destroyAllWindows()
+cap.release()
 
 
 
@@ -132,4 +160,42 @@ We first apply MeanShift and then perform its iterations, eventually when MeanSh
 interest and we do it by updating the size of the actual region of interest. We also calculate the orientaion of the best-fitting ellipse to the new region of interest.
 Again it goes and applies MeanShift with the new scaled search window in prev window location, and this process is continued until some sort of accuracy is met.
 
+ex.
+cap = cv2.VideoCapture(0)
+ret,frame = cap.read()
+face_cascade = cv2.CascadeClassifier('../haarcascade_frontalface_default.xml')
+face_rects = face_cascade.detectMultiScale(frame)
+(face_x,face_y,w,h) = tuple(face_rects[0])
+track_window = (face_x,face_y,w,h)
+roi = frame[face_y:face_y+h,face_x:face_x+w] 
+hsv_roi = cv2.cvtColor(roi,cv2.COLOR_BGR2HSV) #
+# find the histogram to back project the target on each frame, in order to calculate the Mean-Shift
+roi_hist = cv2.calcHist([hsv_roi],channels=[0],mask=None,histSize=[180],ranges=[0,180])
+cv2.normalize(roi_hist,roi_hist,0,255,cv2.NORM_MINMAX)
+term_crit = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 1)
+
+while True:
+    ret,frame = cap.read()
+    if ret == True:
+	hsv = cv2.cvtColor(frame,cv2.COLOR_BGR2HSV)
+	dst = cv2.calcBackProject([hsv],[0],roi_hist,[0,180],1) ##---
+        #####
+	ret,track_window = cv2.CamShift(dst,track_window,term_crit)
+	pts = cv2.boxPoints(ret)
+	pts = np.int0(pts)
+	img2 = cv2.polylines(frame,[pts],True,(0,0,2550,5)
+	#####
+	cv2.imshow('img',img2)
+	k = cv2.waitKey(1) & 0xFF
+	if k==27:
+	    break
+    else:
+	break
+cv2.destroyAllWindows()
+cap.release()
+
+
+----------------------------------------------------------------------------------------------------
+Tracking API's
+----------------------------------------------------------------------------------------------------
 
