@@ -1,0 +1,139 @@
+--------------------------------------------------------
+Machine Learning
+--------------------------------------------------------
+- Its a method of data analysis that automates analytical model building.
+- Using algorithms that iteratively learn from data, machine learning allows computers to find hidden insights without being explicitly programmed.
+
+#-- Pretty much all our image analysis with OpenCV & Python, we've been telling the computer what to actually do with the image such as image processing methods.
+    Machine Learning is kind of going to flip that on its head where we are going to give the computer the images and the desird output and the algorithm tries to work
+    out on its own to find the best approach to take.
+
+#-- Supervised Learning algorithms are trained using labeled examples, such as an input where the desired output is known.
+    Its commonly used in applications where historical data predicts likely future events.
+    The Learning algorithm receives a set of inputs along with the corresponding correct outputs, and the algorithm learns by comparing its actual output with correct
+    outputs to find errors.
+    It then modifies the algorithm accordingly.
+   
+#-- Machine Learning Process:     -------> [Test Data] ---------------------------
+                                  |                                              v
+[Data Acquisition] --> [Data Cleaning] --> [Model Training & Building] --> [Model Testing] --> [Model Deployment]
+                                                        ^                         |
+                                                        ---------------------------
+
+#-- Classification Metrics (Evaluating a Classification Algorithm)
+Since this is Supervised Learning we'll first fit/train a model on training data, then test the model on testing data.
+- Accuracy  : no. of correct predictions / total no. of predictions
+Its useful when target classes are well balanced.
+- Recall    : no_of_true_positives/(no_of_true_positives + no_of_false_negatives)
+Ability of a model to find all the relevant cases within a dataset
+- Precision : no_of_true_positives/(no_of_true_positives + no_of_false_positives)
+Ability of the classification model to identify only the relevant data points.
+##---TradeOff between Recall & Precision
+== Recall expresses the ability to find all relevant instances in a dataset, precision expresses the proportion of the data points our model says was relevant,
+   vs the ones actually were relevant.
+- F1-Score  : 2 * (precision*recall)/(precision+recall)
+Its the harmonic mean of precision and recall. ## we use harmonic mean instead of simple mean bcoz it punishes extreme values.
+when we want to find an optimal blend of precision and recall, we combine the two metrics using what is called the F1 score.
+
+#---Confusion Metrics
+					       Predicted_condition
+				predicted_positive 		predicted_negative
+              condition_positive      True_positive              False_negative
+True_condition
+              condition_negative      False_positive             True_negative
+
+
+--------------------------------------------------------
+Deep Learning
+--------------------------------------------------------
+
+#-- Neural Network
+- Perceptron : It has inputs and an output. The inputs are the values of the features, these inputs are multiplied with weights which are most of the time randomly
+               initialized. The sum of these inputs and their corresponding weights are then sent to the `Activation Function`. In some cases the inputs are initialized
+               to zero which gives a same value 0, to avoid this we have a bias as input and provide a desired value.
+		i.e.          n
+		      z   = SUMMATION   wi * xi + b
+                             i=0
+- Neural Network : Build on the Perceptron Model,
+                   Consist of Input layers --> takes real values from the data, 
+                              Hidden Layers --> Layers in between Input & Output. 3 or more layers is 'deep network'.
+                              Ouput Layer --> Final estimate.
+#-- Activation Functions:
+
+- Threshold - function that outputs 0/1 based on the threshold set for the value of z.
+              Small changes in the value of z isn't reflected here.
+
+              |		   --------------
+	      1		   |
+       f(x)   |		   |
+	      |		   |
+	      0____________|
+	      |____________0____________
+                          x
+
+- Sigmoid Function - f(z) = 1 / (1 + e^-z). This returns a continuous curve
+
+              1		    -  --------------
+	      |	         - 
+       f(x)   |        -		   
+	      |	     -	  
+	      0___-
+	      |_________0________________
+                          x
+
+- Hyperbolic Tangent : f(z) = tanh(z)
+
+              1		    -  --------------
+	      |	         - 
+       f(x)   |        -		   
+	      |	     -	  
+	     -1___-
+	      |_________0________________
+                          x
+
+- Rectified Linear Unit (ReLU): f(z) = max(0,z)
+
+              |		       /
+	      1		      /
+       f(x)   |		     /
+	      |		    /
+	      0____________/
+	      |____________0____________
+
+#-- Cost Functions : allows us to measure the performance of these neurons, i.e. we can measure how far we are from the expected value.
+       y -> represents true value
+       a -> represent neuron's prediction i.e output of activation function
+       z = summ w*x + b
+       f(z) = a
+
+- Quadratic Cost: C = Summ(y-a)^2 / n
+  Larger errors are more prominent due to squaring
+  This calculation can cause slow down in our learning speed.
+
+- Cross Entropy: C = (-1/n) Summ ( y ln(a) + (1-y) ln(1-a) )
+  This cost function allows for faster learning
+  larger the difference between y & a, faster the neuron can learn.
+
+#-- Gradient Descent & Backpropogation :
+    Gradient Descent is an optimization function for finding the minimum of a function(Cost Function).
+    To find a local minimum we take steps proprtional to the negative of the gradient.
+
+              |	\	     /
+	      |	 \	    /
+       C      |	  \	   /
+	      |	   \	  / 
+	      |     ------
+	      |_________________
+                       w 
+   Using Gradient-Descent we can figure out the best parameters for minimizing our cost, i.e. finding best values for the weights of neuron inputs.
+   Gradient is nothing but the derivative of that function.
+
+   How quickly can we adjust the optimal parameters or weights across the entire network ???
+   This is where `Backpropogation` comes in.
+   ---Backpropogation is used to calculate the error contribution of each neuron after a batch of data is processed.
+      It relies heavily on the chain rule to go back through the network and calculate these errors.
+      It works by calculating the errors at the output and then distributes it back through the network layers.
+      It requires a known desired value for each input value(Supervised Learning).
+
+
+ 
